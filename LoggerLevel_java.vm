@@ -1,0 +1,20 @@
+#parse("include/java_header.vm")
+
+package ${target.javaPackageFromFolder($SRC)};
+
+import java.util.logging.Level;
+
+/**
+ * The logger level <br>
+ * 
+ * @author Telosys
+ *
+ */
+public class LoggerLevel {
+
+	// Set the logger level here :
+	
+	//public final static Level LEVEL = Level.OFF ;
+	public final static Level LEVEL = Level.ALL ;
+	
+}
