@@ -96,11 +96,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 /**
  * JAXRS Jersey controller for '${entity.name}' management.
  */
-@Path("/${uncapitalizedEntityName}s")
+@Path("/${uncapitalizedEntityName}")
 public class ${entity.name}Resource extends AbstractResourceController {
 
 	private ${entity.name}Persistence ${uncapitalizedEntityName}Service = PersistenceServiceProvider.getService(${entity.name}Persistence.class);
@@ -114,8 +116,8 @@ public class ${entity.name}Resource extends AbstractResourceController {
 	}
 
 	/**
-	 * Get all ${uncapitalizedEntityName}.
-	 * @return all ${uncapitalizedEntityName}
+	 * Get all ${uncapitalizedEntityName} entities.
+	 * @return list with all entities found
 	 */
 	@GET
 	@Produces({MediaType.APPLICATION_JSON})
@@ -125,51 +127,100 @@ public class ${entity.name}Resource extends AbstractResourceController {
 	}
 
 	/**
-	 * Get ${uncapitalizedEntityName}.
+	 * Retrieves a ${uncapitalizedEntityName} using the given id.
 #foreach( $attribute in $entity.keyAttributes )
 	 * @param ${attribute.name} ${attribute.name}
 #end
-	 * @return ${uncapitalizedEntityName}
+	 * @return 200 + body if found, 404 if not found 
 	 */
 	@GET
 	@Path("${pkPath}")
 	@Produces({MediaType.APPLICATION_JSON})
-	public ${entityClass} findById(${pkPathVariables}) {
+	public Response findById(${pkPathVariables}) {
 		logger.info("findById("+${pkPlus}+")...");
-		return ${uncapitalizedEntityName}Service.findById(${pkElementsVariables});
+		${entityClass} record = ${uncapitalizedEntityName}Service.findById(${pkElementsVariables});
+		if ( record != null ) {
+			return Response.ok(record).build();
+		}
+		else {
+			return Response.status(Status.NOT_FOUND).build();
+		}
 	}
 
 	/**
-	 * Create a ${uncapitalizedEntityName}.
+	 * Creates a new ${uncapitalizedEntityName}.
 	 * @param ${uncapitalizedEntityName} ${uncapitalizedEntityName}
-	 * @return ${uncapitalizedEntityName}
+	 * @return 200 + body if created, 409 conflict if duplicate key 
 	 */	
 	@POST
 	@Consumes({MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_JSON})
-	public ${entityClass} create(${entityClass} ${uncapitalizedEntityName}) {
+	public Response create(${entityClass} ${uncapitalizedEntityName}) {
 		logger.info("create()...");
-		return ${uncapitalizedEntityName}Service.create(${uncapitalizedEntityName});
+		//return ${uncapitalizedEntityName}Service.create(${uncapitalizedEntityName});
+		if ( ${uncapitalizedEntityName}Service.exists(${uncapitalizedEntityName}) ) {
+			logger.info("create() : already exists -> conflict");
+			return Response.status(Status.CONFLICT).build();
+		}
+		else {
+			logger.info("create() : doesn't exist -> create");
+			${entityClass} record = ${uncapitalizedEntityName}Service.create(${uncapitalizedEntityName});
+			return Response.ok(record).build();
+		}
 	}
 
+//------------------------------------------------------------
 	/**
-	 * Update a ${uncapitalizedEntityName}.
-	 * @param ${uncapitalizedEntityName} ${uncapitalizedEntityName}
+	 * Updates the ${uncapitalizedEntityName} identified by the given id
+	 * @param ${uncapitalizedEntityName} ${uncapitalizedEntityName} entity
 #foreach( $attribute in $entity.keyAttributes )
-	 * @param ${attribute.name} ${attribute.name}
+	 * @param ${attribute.name} ${attribute.name} 
 #end
-	 * @return ${uncapitalizedEntityName}
+	 * @return 200 if found and updated, 404 if not found 
 	 */	
 	@PUT
 	@Path("${pkPath}")
 	@Consumes({MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_JSON})
 	// public ${entityClass} update(${entityClass} ${uncapitalizedEntityName}, ${pkPathVariables}) {
-	public boolean update(${entityClass} ${uncapitalizedEntityName}, ${pkPathVariables}) {
+	public Response update(${entityClass} ${uncapitalizedEntityName}, ${pkPathVariables}) {
 		logger.info("update()...");
-		return ${uncapitalizedEntityName}Service.update(${uncapitalizedEntityName});
+		// force the id (use the id provided by the URL)
+#foreach( $attribute in $entity.keyAttributes )
+		${uncapitalizedEntityName}.${attribute.setter}( $attribute.name );
+#end
+		boolean updated = ${uncapitalizedEntityName}Service.update(${uncapitalizedEntityName});
+		if ( updated ) {
+			// Actually updated (found and updated) => 200 OK
+			return Response.status(Status.OK).build();
+		}
+		else {
+			// Not updated with no error => 404 not found
+			return Response.status(Status.NOT_FOUND).build();
+		}
 	}
 
+	/**
+	 * Save (create or update) the given ${uncapitalizedEntityName}.
+	 * @param ${uncapitalizedEntityName} ${uncapitalizedEntityName} entity
+	 * @return 200 if found and updated, 201 if not found and created
+	 */	
+	@PUT
+	@Consumes({MediaType.APPLICATION_JSON})
+	@Produces({MediaType.APPLICATION_JSON})
+	public Response save(${entityClass} ${uncapitalizedEntityName}) {
+		logger.info("save()...");
+		Status status = Status.OK ; // 200 OK
+		if ( ! ${uncapitalizedEntityName}Service.exists(${uncapitalizedEntityName}) ) {
+			status = Status.CREATED ; // 201 CREATED
+		}
+		${entityClass} record = ${uncapitalizedEntityName}Service.save(${uncapitalizedEntityName});
+		// Response ( code 200 or 201 )
+		return Response.status(status).entity(record).build();
+	}
+
+
+//------------------------------------------------------------
 	/**
 	 * Delete a ${uncapitalizedEntityName}.
 #foreach( $attribute in $entity.keyAttributes )
@@ -178,11 +229,21 @@ public class ${entity.name}Resource extends AbstractResourceController {
 	 */
 	@DELETE
 	@Path("${pkPath}")
-	@Consumes({MediaType.APPLICATION_JSON})
-	public void delete(${pkPathVariables}) {
+	//@Consumes({MediaType.APPLICATION_JSON})
+	// public void delete(${pkPathVariables}) {
+	public Response delete(${pkPathVariables}) {
 		logger.info("delete("+${pkPlus}+")...");
-		${uncapitalizedEntityName}Service.deleteById(${pkArgs});
-	}
+		// ${uncapitalizedEntityName}Service.deleteById(${pkArgs});
+		boolean deleted = ${uncapitalizedEntityName}Service.deleteById(${pkArgs});
+		if ( deleted ) {
+			// Actually deleted (found and deleted) => 204 "No Content" because no body in the response 
+			return Response.status(Status.NO_CONTENT).build();
+		}
+		else {
+			// Not deleted with no error => 404 "Not found"
+			return Response.status(Status.NOT_FOUND).build();
+		}
+}
 
 	@GET
 	@Path("/${uncapitalizedEntityName}s-list-items")

@@ -3,6 +3,7 @@
   xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
   id="${fn.get("PROJECT_NAME","to.be.defined")}" version="2.5">
 
+#set($REST_ROOT = "/api/v1" )
 	<display-name>${fn.get("PROJECT_NAME","to.be.defined")}</display-name>
   
 	<!-- JAX-RS 1 with JERSEY 1.x IMPLEMENTATION -->
@@ -24,7 +25,7 @@
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>Jersey</servlet-name>
-		<url-pattern>/rest/*</url-pattern>
+		<url-pattern>${REST_ROOT}/*</url-pattern>
 	</servlet-mapping>
 
 	<!-- Servlet filter to remove HTTP caching for REST resources -->
@@ -34,7 +35,7 @@
 	</filter>
 	<filter-mapping>
 		<filter-name>CacheFilter</filter-name>
-		<url-pattern>/rest/*</url-pattern>
+		<url-pattern>${REST_ROOT}/*</url-pattern>
 	</filter-mapping>
 
 </web-app>
