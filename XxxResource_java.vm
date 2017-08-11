@@ -150,14 +150,13 @@ public class ${entity.name}Resource extends AbstractResourceController {
 	/**
 	 * Creates a new ${uncapitalizedEntityName}.
 	 * @param ${uncapitalizedEntityName} ${uncapitalizedEntityName}
-	 * @return 200 + body if created, 409 conflict if duplicate key 
+	 * @return 201 with body if created, 409 conflict if duplicate key 
 	 */	
 	@POST
 	@Consumes({MediaType.APPLICATION_JSON})
 	@Produces({MediaType.APPLICATION_JSON})
 	public Response create(${entityClass} ${uncapitalizedEntityName}) {
 		logger.info("create()...");
-		//return ${uncapitalizedEntityName}Service.create(${uncapitalizedEntityName});
 		if ( ${uncapitalizedEntityName}Service.exists(${uncapitalizedEntityName}) ) {
 			logger.info("create() : already exists -> conflict");
 			return Response.status(Status.CONFLICT).build();
@@ -165,7 +164,7 @@ public class ${entity.name}Resource extends AbstractResourceController {
 		else {
 			logger.info("create() : doesn't exist -> create");
 			${entityClass} record = ${uncapitalizedEntityName}Service.create(${uncapitalizedEntityName});
-			return Response.ok(record).build();
+			return Response.status(Status.CREATED).entity(record).build();
 		}
 	}
 
